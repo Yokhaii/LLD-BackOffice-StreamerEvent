@@ -284,6 +284,72 @@
       }
     }
 
+    .masters-container {
+      margin-top: 10px;
+    }
+
+    .masters-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .masters-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+      min-height: 32px;
+    }
+
+    .master-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .master-tag .remove-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+      transition: background 0.2s;
+    }
+
+    .master-tag .remove-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .add-master-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .add-master-row input {
+      flex: 1;
+      max-width: 200px;
+    }
+
+    .add-master-row button {
+      padding: 8px 14px;
+    }
+
     .leaderboard-section {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -454,7 +520,10 @@
     <section class="card">
       <div class="card-header">
         <h2 class="card-title">Alliance Setup</h2>
-        <button class="btn-secondary btn-sm" onclick="loadAlliances()">Refresh</button>
+        <div class="button-group">
+          <button class="btn-primary btn-sm" onclick="updateAllAlliances()">Save All Changes</button>
+          <button class="btn-secondary btn-sm" onclick="loadAlliances()">Refresh</button>
+        </div>
       </div>
       <div id="allianceList" class="alliance-grid">
         <div class="loading"><span class="spinner"></span>Loading alliances...</div>
@@ -644,10 +713,30 @@
       try {
         const data = await apiCall('/alliances');
         alliances = Array.isArray(data) ? data : (data.alliances || []);
+        // Reset local edits when loading fresh data
+        allianceMasterEdits = {};
         renderAlliances();
       } catch (error) {
         container.innerHTML = `<div class="empty-state">Failed to load alliances: ${error.message}</div>`;
       }
+    }
+
+    // Store local edits for master IDs per alliance
+    let allianceMasterEdits = {};
+
+    function getMasterIds(alliance) {
+      // Check if we have local edits first
+      if (allianceMasterEdits[alliance.id] !== undefined) {
+        return allianceMasterEdits[alliance.id];
+      }
+      // Support both masterIds array and legacy masterId single value
+      if (Array.isArray(alliance.masterIds)) {
+        return [...alliance.masterIds];
+      }
+      if (alliance.masterId) {
+        return [alliance.masterId];
+      }
+      return [];
     }
 
     function renderAlliances() {
@@ -658,43 +747,135 @@
         return;
       }
 
-      container.innerHTML = alliances.map(alliance => `
-        <div class="alliance-card">
-          <div class="alliance-header">
-            <span class="alliance-id">ID: ${alliance.id}</span>
-            <span class="alliance-name">${alliance.name || 'Unnamed'}</span>
-          </div>
-          <div class="alliance-inputs">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label>Name</label>
-              <input type="text" id="name-${alliance.id}" value="${alliance.name || ''}" placeholder="Alliance name">
+      // Initialize local edits from server data
+      alliances.forEach(alliance => {
+        if (allianceMasterEdits[alliance.id] === undefined) {
+          allianceMasterEdits[alliance.id] = getMasterIds(alliance);
+        }
+      });
+
+      container.innerHTML = alliances.map(alliance => {
+        const masterIds = allianceMasterEdits[alliance.id] || [];
+        const masterTags = masterIds.map(id => `
+          <span class="master-tag">
+            ${id}
+            <button class="remove-btn" onclick="removeMaster(${alliance.id}, ${id})" title="Remove master">&times;</button>
+          </span>
+        `).join('');
+
+        return `
+          <div class="alliance-card">
+            <div class="alliance-header">
+              <span class="alliance-id">ID: ${alliance.id}</span>
+              <span class="alliance-name">${alliance.name || 'Unnamed'}</span>
             </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label>Master ID</label>
-              <input type="number" id="master-${alliance.id}" value="${alliance.masterId || ''}" placeholder="Master player ID">
+            <div class="alliance-inputs">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label>Name</label>
+                <input type="text" id="name-${alliance.id}" value="${alliance.name || ''}" placeholder="Alliance name">
+              </div>
+              <button class="btn-primary" onclick="updateAlliance(${alliance.id})">Update</button>
             </div>
-            <button class="btn-primary" onclick="updateAlliance(${alliance.id})">Update</button>
+            <div class="masters-container">
+              <div class="masters-label">Alliance Masters</div>
+              <div class="masters-list" id="masters-list-${alliance.id}">
+                ${masterTags || '<span style="color: var(--text-secondary); font-size: 0.85rem;">No masters assigned</span>'}
+              </div>
+              <div class="add-master-row">
+                <input type="number" id="new-master-${alliance.id}" placeholder="Enter player ID">
+                <button class="btn-secondary btn-sm" onclick="addMaster(${alliance.id})">Add Master</button>
+              </div>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    async function updateAlliance(id) {
+    function addMaster(allianceId) {
+      const input = document.getElementById(`new-master-${allianceId}`);
+      const newMasterId = parseInt(input.value);
+
+      if (!newMasterId || isNaN(newMasterId)) {
+        showToast('Please enter a valid player ID', 'error');
+        return;
+      }
+
+      if (!allianceMasterEdits[allianceId]) {
+        allianceMasterEdits[allianceId] = [];
+      }
+
+      if (allianceMasterEdits[allianceId].includes(newMasterId)) {
+        showToast('This player is already a master', 'error');
+        return;
+      }
+
+      allianceMasterEdits[allianceId].push(newMasterId);
+      input.value = '';
+      renderAlliances();
+      showToast(`Master ${newMasterId} added (click Update to save)`, 'success');
+    }
+
+    function removeMaster(allianceId, masterId) {
+      if (!allianceMasterEdits[allianceId]) return;
+
+      allianceMasterEdits[allianceId] = allianceMasterEdits[allianceId].filter(id => id !== masterId);
+      renderAlliances();
+      showToast(`Master ${masterId} removed (click Update to save)`, 'success');
+    }
+
+    async function updateAlliance(id, silent = false) {
       const name = document.getElementById(`name-${id}`).value;
-      const masterId = document.getElementById(`master-${id}`).value;
+      const masterIds = allianceMasterEdits[id] || [];
 
       try {
         if (name) {
           await apiCall(`/alliances/${id}/name`, 'POST', { name });
         }
-        if (masterId) {
-          await apiCall(`/alliances/${id}/master`, 'POST', { masterId: parseInt(masterId) });
+        // Send the array of master IDs
+        await apiCall(`/alliances/${id}/masters`, 'POST', { masterIds: masterIds });
+
+        if (!silent) {
+          showToast(`Alliance ${id} updated!`, 'success');
         }
-        showToast(`Alliance ${id} updated!`, 'success');
-        loadAlliances();
+        // Clear local edits after successful save
+        delete allianceMasterEdits[id];
+        if (!silent) {
+          loadAlliances();
+        }
       } catch (error) {
-        showToast(`Failed to update alliance: ${error.message}`, 'error');
+        if (!silent) {
+          showToast(`Failed to update alliance: ${error.message}`, 'error');
+        }
+        throw error;
       }
+    }
+
+    async function updateAllAlliances() {
+      if (!alliances.length) {
+        showToast('No alliances to update', 'error');
+        return;
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const alliance of alliances) {
+        try {
+          await updateAlliance(alliance.id, true);
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to update alliance ${alliance.id}:`, error);
+          errorCount++;
+        }
+      }
+
+      if (errorCount === 0) {
+        showToast(`All ${successCount} alliances updated successfully!`, 'success');
+      } else {
+        showToast(`Updated ${successCount} alliances, ${errorCount} failed`, 'error');
+      }
+
+      loadAlliances();
     }
 
     // Leaderboards
