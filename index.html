@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alliance Event Admin Panel</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0f0f0f;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #252525;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --danger: #ef4444;
+      --danger-hover: #f87171;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --text-primary: #f5f5f5;
+      --text-secondary: #a3a3a3;
+      --border: #333;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .status-active {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--success);
+    }
+
+    .status-inactive {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    @media (max-width: 600px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger-hover);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #16a34a;
+    }
+
+    .btn-warning {
+      background: var(--warning);
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #d97706;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      color: white;
+      font-size: 0.9rem;
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast-success {
+      background: var(--success);
+    }
+
+    .toast-error {
+      background: var(--danger);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .alliance-grid {
+      display: grid;
+      gap: 15px;
+    }
+
+    .alliance-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 15px;
+    }
+
+    .alliance-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .alliance-id {
+      background: var(--accent);
+      color: white;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .alliance-name {
+      font-weight: 600;
+    }
+
+    .alliance-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    @media (max-width: 700px) {
+      .alliance-inputs {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .leaderboard-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 800px) {
+      .leaderboard-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .leaderboard-list {
+      list-style: none;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+    }
+
+    .leaderboard-rank {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-right: 12px;
+    }
+
+    .rank-1 { background: #fbbf24; color: #1a1a1a; }
+    .rank-2 { background: #94a3b8; color: #1a1a1a; }
+    .rank-3 { background: #cd7f32; color: #1a1a1a; }
+    .rank-default { background: var(--border); }
+
+    .leaderboard-info {
+      flex: 1;
+    }
+
+    .leaderboard-name {
+      font-weight: 500;
+    }
+
+    .leaderboard-meta {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .leaderboard-score {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-secondary);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px;
+      color: var(--text-secondary);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 25px;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .modal h3 {
+      margin-bottom: 10px;
+    }
+
+    .modal p {
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Alliance Event Admin</h1>
+      <p>Manage alliances, events, and leaderboards</p>
+    </header>
+
+    <!-- Settings Section -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">API Settings</h2>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="apiUrl">API Base URL</label>
+          <input type="text" id="apiUrl" placeholder="https://your-api.com/api">
+        </div>
+        <div class="form-group">
+          <label for="authToken">Authorization Token</label>
+          <input type="password" id="authToken" placeholder="Enter your auth token">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+    </section>
+
+    <!-- Event Control Section -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Event Control</h2>
+        <span id="eventStatus" class="status-badge status-inactive">Unknown</span>
+      </div>
+      <div class="button-group">
+        <button class="btn-success" onclick="startEvent()">Start Event</button>
+        <button class="btn-warning" onclick="stopEvent()">Stop Event</button>
+        <button class="btn-danger" onclick="confirmReset()">Reset All Data</button>
+        <button class="btn-secondary" onclick="refreshStatus()">Refresh Status</button>
+      </div>
+    </section>
+
+    <!-- Alliance Setup Section -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Alliance Setup</h2>
+        <button class="btn-secondary btn-sm" onclick="loadAlliances()">Refresh</button>
+      </div>
+      <div id="allianceList" class="alliance-grid">
+        <div class="loading"><span class="spinner"></span>Loading alliances...</div>
+      </div>
+    </section>
+
+    <!-- Leaderboard Section -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Leaderboards</h2>
+        <button class="btn-secondary btn-sm" onclick="loadLeaderboards()">Refresh</button>
+      </div>
+      <div class="leaderboard-section">
+        <div>
+          <h3 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--text-secondary);">Alliance Rankings</h3>
+          <ul id="allianceLeaderboard" class="leaderboard-list">
+            <div class="loading"><span class="spinner"></span>Loading...</div>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--text-secondary);">Top Players</h3>
+          <ul id="playerLeaderboard" class="leaderboard-list">
+            <div class="loading"><span class="spinner"></span>Loading...</div>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmModal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>Confirm Reset</h3>
+      <p>Are you sure you want to reset all data? This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn-danger" onclick="resetAllData()">Reset Everything</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let alliances = [];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSettings();
+      if (getApiUrl() && getAuthToken()) {
+        refreshAll();
+      }
+    });
+
+    // Settings
+    function getApiUrl() {
+      return document.getElementById('apiUrl').value.replace(/\/$/, '');
+    }
+
+    function getAuthToken() {
+      return document.getElementById('authToken').value;
+    }
+
+    function loadSettings() {
+      const savedUrl = localStorage.getItem('apiUrl');
+      const savedToken = localStorage.getItem('authToken');
+      if (savedUrl) document.getElementById('apiUrl').value = savedUrl;
+      if (savedToken) document.getElementById('authToken').value = savedToken;
+    }
+
+    function saveSettings() {
+      localStorage.setItem('apiUrl', getApiUrl());
+      localStorage.setItem('authToken', getAuthToken());
+      showToast('Settings saved!', 'success');
+      refreshAll();
+    }
+
+    // API Helper
+    async function apiCall(endpoint, method = 'GET', body = null) {
+      const url = getApiUrl();
+      const token = getAuthToken();
+
+      if (!url || !token) {
+        showToast('Please configure API settings first', 'error');
+        throw new Error('Missing API configuration');
+      }
+
+      const options = {
+        method,
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      if (body) {
+        options.body = JSON.stringify(body);
+      }
+
+      const response = await fetch(`${url}${endpoint}`, options);
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+
+      const text = await response.text();
+      return text ? JSON.parse(text) : {};
+    }
+
+    // Toast Notifications
+    function showToast(message, type = 'success') {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Refresh All Data
+    function refreshAll() {
+      refreshStatus();
+      loadAlliances();
+      loadLeaderboards();
+    }
+
+    // Event Control
+    async function refreshStatus() {
+      try {
+        const data = await apiCall('/alliances/event/status');
+        const badge = document.getElementById('eventStatus');
+        const isActive = data.active || data.isActive || data.status === 'active';
+        badge.textContent = isActive ? 'Active' : 'Inactive';
+        badge.className = `status-badge ${isActive ? 'status-active' : 'status-inactive'}`;
+      } catch (error) {
+        console.error('Failed to fetch status:', error);
+      }
+    }
+
+    async function startEvent() {
+      try {
+        await apiCall('/alliances/event/start', 'POST');
+        showToast('Event started!', 'success');
+        refreshStatus();
+      } catch (error) {
+        showToast(`Failed to start event: ${error.message}`, 'error');
+      }
+    }
+
+    async function stopEvent() {
+      try {
+        await apiCall('/alliances/event/stop', 'POST');
+        showToast('Event stopped!', 'success');
+        refreshStatus();
+      } catch (error) {
+        showToast(`Failed to stop event: ${error.message}`, 'error');
+      }
+    }
+
+    function confirmReset() {
+      document.getElementById('confirmModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('confirmModal').classList.add('hidden');
+    }
+
+    async function resetAllData() {
+      closeModal();
+      try {
+        await apiCall('/alliances/reset', 'POST');
+        showToast('All data has been reset!', 'success');
+        refreshAll();
+      } catch (error) {
+        showToast(`Failed to reset: ${error.message}`, 'error');
+      }
+    }
+
+    // Alliances
+    async function loadAlliances() {
+      const container = document.getElementById('allianceList');
+      container.innerHTML = '<div class="loading"><span class="spinner"></span>Loading alliances...</div>';
+
+      try {
+        const data = await apiCall('/alliances');
+        alliances = Array.isArray(data) ? data : (data.alliances || []);
+        renderAlliances();
+      } catch (error) {
+        container.innerHTML = `<div class="empty-state">Failed to load alliances: ${error.message}</div>`;
+      }
+    }
+
+    function renderAlliances() {
+      const container = document.getElementById('allianceList');
+
+      if (!alliances.length) {
+        container.innerHTML = '<div class="empty-state">No alliances found</div>';
+        return;
+      }
+
+      container.innerHTML = alliances.map(alliance => `
+        <div class="alliance-card">
+          <div class="alliance-header">
+            <span class="alliance-id">ID: ${alliance.id}</span>
+            <span class="alliance-name">${alliance.name || 'Unnamed'}</span>
+          </div>
+          <div class="alliance-inputs">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Name</label>
+              <input type="text" id="name-${alliance.id}" value="${alliance.name || ''}" placeholder="Alliance name">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Master ID</label>
+              <input type="number" id="master-${alliance.id}" value="${alliance.masterId || ''}" placeholder="Master player ID">
+            </div>
+            <button class="btn-primary" onclick="updateAlliance(${alliance.id})">Update</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function updateAlliance(id) {
+      const name = document.getElementById(`name-${id}`).value;
+      const masterId = document.getElementById(`master-${id}`).value;
+
+      try {
+        if (name) {
+          await apiCall(`/alliances/${id}/name`, 'POST', { name });
+        }
+        if (masterId) {
+          await apiCall(`/alliances/${id}/master`, 'POST', { masterId: parseInt(masterId) });
+        }
+        showToast(`Alliance ${id} updated!`, 'success');
+        loadAlliances();
+      } catch (error) {
+        showToast(`Failed to update alliance: ${error.message}`, 'error');
+      }
+    }
+
+    // Leaderboards
+    async function loadLeaderboards() {
+      loadAllianceLeaderboard();
+      loadPlayerLeaderboard();
+    }
+
+    async function loadAllianceLeaderboard() {
+      const container = document.getElementById('allianceLeaderboard');
+      container.innerHTML = '<div class="loading"><span class="spinner"></span>Loading...</div>';
+
+      try {
+        const data = await apiCall('/alliances/leaderboard');
+        const leaderboard = Array.isArray(data) ? data : (data.leaderboard || data.alliances || []);
+
+        if (!leaderboard.length) {
+          container.innerHTML = '<div class="empty-state">No data available</div>';
+          return;
+        }
+
+        container.innerHTML = leaderboard.map((item, index) => `
+          <li class="leaderboard-item">
+            <span class="leaderboard-rank ${index < 3 ? `rank-${index + 1}` : 'rank-default'}">${index + 1}</span>
+            <div class="leaderboard-info">
+              <div class="leaderboard-name">${item.name || `Alliance ${item.id}`}</div>
+              <div class="leaderboard-meta">${item.memberCount || 0} members</div>
+            </div>
+            <span class="leaderboard-score">${(item.totalPoints || item.score || item.points || 0).toLocaleString()}</span>
+          </li>
+        `).join('');
+      } catch (error) {
+        container.innerHTML = `<div class="empty-state">Failed to load</div>`;
+      }
+    }
+
+    async function loadPlayerLeaderboard() {
+      const container = document.getElementById('playerLeaderboard');
+      container.innerHTML = '<div class="loading"><span class="spinner"></span>Loading...</div>';
+
+      try {
+        const data = await apiCall('/alliances/leaderboard/players');
+        const players = Array.isArray(data) ? data : (data.players || data.leaderboard || []);
+
+        if (!players.length) {
+          container.innerHTML = '<div class="empty-state">No data available</div>';
+          return;
+        }
+
+        container.innerHTML = players.slice(0, 10).map((player, index) => `
+          <li class="leaderboard-item">
+            <span class="leaderboard-rank ${index < 3 ? `rank-${index + 1}` : 'rank-default'}">${index + 1}</span>
+            <div class="leaderboard-info">
+              <div class="leaderboard-name">Player ${player.userId || player.id}</div>
+              <div class="leaderboard-meta">Alliance ${player.allianceId}</div>
+            </div>
+            <span class="leaderboard-score">${(player.points || player.totalPoints || player.score || 0).toLocaleString()}</span>
+          </li>
+        `).join('');
+      } catch (error) {
+        container.innerHTML = `<div class="empty-state">Failed to load</div>`;
+      }
+    }
+  </script>
+</body>
+</html>
